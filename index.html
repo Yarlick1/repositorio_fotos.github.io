@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Boda de Gaby & Carlos</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap"
+        rel="stylesheet" />
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+</head>
+
+<body>
+    <script>
+        AOS.init();
+    </script>
+
+    <div class="hero-container" data-aos="fade-down" data-aos-easing="linear" data-aos-duration="1500">
+        <div class="hero-image"></div>
+
+        <div class="ornamental-divider">
+            <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+                <path fill="#ffffff" fill-opacity="1"
+                    d="M0,192L60,197.3C120,203,240,213,360,202.7C480,192,600,160,720,160C840,160,960,192,1080,202.7C1200,213,1320,203,1380,197.3L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z">
+                </path>
+                <path fill="#C69C6D"
+                    d="M720,130 C730,145 740,150 750,145 C740,160 720,170 720,170 C720,170 700,160 690,145 C700,150 710,145 720,130 Z" />
+            </svg>
+        </div>
+    </div>
+
+    <div class="invitation-card">
+        <h1 class="couple-names">Gaby <span>&</span> Carlos</h1>
+
+        <div class="line-separator"></div>
+
+        <div class="date-section">
+            <div class="date">21 DE MARZO, 2026</div>
+        </div>
+
+        <p class="location">Localización, Lugar, etc.</p>
+    </div>
+
+    <section class="welcome-message container" data-aos="fade-up">
+        <div class="message-box">
+            <h2 class="script-font gold-text">
+                Nuestra historia a través de tus ojos
+            </h2>
+            <div class="ornamental-line"></div>
+            <p>
+                ¡Bienvenidos a nuestra celebración! Cada risa, cada abrazo y cada
+                baile cuenta nuestra historia. Nos encantaría que nos ayudes a
+                capturar estos instantes mágicos que son tan valiosos para nosotros.
+            </p>
+            <p class="highlight-text">
+                Gracias por ser parte de este día y por compartir tus recuerdos con
+                nosotros.
+            </p>
+        </div>
+    </section>
+
+    <section class="gallery-section">
+        <div class="gallery-header">— MOMENTOS CAPTURADOS —</div>
+        <div id="photo-container">
+            <p id="loading-message" style="text-align: center; color: #999; width: 100%">
+                Cargando recuerdos...
+            </p>
+        </div>
+    </section>
+
+    <footer class="bottom-nav">
+        <button id="upload-trigger-btn" onclick="openModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Subir
+        </button>
+    </footer>
+
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <span onclick="closeModal(event)" style="
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            cursor: pointer;
+            font-size: 24px;
+          ">&times;</span>
+            <h3 style="
+            font-family: 'Great Vibes';
+            font-size: 2rem;
+            color: var(--gold);
+            margin-bottom: 15px;
+          ">
+                Compartir Foto
+            </h3>
+
+            <form id="upload-form">
+                <p style="
+              font-size: 0.75rem;
+              color: #a67c52;
+              margin-bottom: 10px;
+              font-style: italic;
+            ">
+                    * Puedes seleccionar hasta 5 fotos a la vez.
+                </p>
+
+                <label class="upload-area" id="drop-area">
+                    <input type="file" id="photo-file" name="file" accept="image/*" multiple required
+                        style="display: none" onchange="previewImages(this)" />
+
+                    <div id="preview-container" class="hidden" style="
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                width: 100%;
+                margin-bottom: 10px;
+              "></div>
+
+                    <div id="upload-instructions">
+                        <div class="upload-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"
+                                fill="none" stroke="#C69C6D" stroke-width="1">
+                                <path
+                                    d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                </path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                        </div>
+                        <p id="file-label" style="font-size: 0.85rem">
+                            Toca para elegir fotos (Máx. 5)
+                        </p>
+                    </div>
+                </label>
+
+                <button type="submit" id="submit-btn" style="
+              width: 100%;
+              padding: 15px;
+              background: var(--gold);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-weight: bold;
+              cursor: pointer;
+              margin-top: 15px;
+            ">
+                    COMPARTIR MOMENTOS
+                </button>
+                <div id="status-message" style="margin-top: 15px; font-size: 0.9rem; font-weight: bold"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="lightbox-modal" class="modal" onclick="closeLightbox(event)">
+        <button class="close-lightbox" onclick="closeLightbox()">&times;</button>
+        <img id="lightbox-image" src="" alt="Zoom" />
+    </div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        // Mapeamos el ID viejo al nuevo por si acaso, o usamos la funcion directa
+        const triggerBtn = document.getElementById("upload-trigger-btn");
+        // Aseguramos que el botón del footer abra el modal
+        triggerBtn.addEventListener("click", openModal);
+    </script>
+</body>
+
+</html>
