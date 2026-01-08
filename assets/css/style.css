@@ -33,14 +33,12 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* URL de la imagen de los anillos que te di */
   background-image: url("../images/anillos.jpg");
   background-size: cover;
   background-position: center;
 }
 
 /* --- 2. DIVISOR ORNAMENTAL (LA CURVA) --- */
-/* Este SVG crea el efecto de "tarjeta recortada" sobre la foto */
 .ornamental-divider {
   position: absolute;
   bottom: -1px; /* Ajuste fino para evitar líneas blancas */
@@ -142,7 +140,6 @@ h1.couple-names {
 
 #photo-container {
   display: grid;
-    /* Crea columnas automáticas que se ajustan al tamaño de la pantalla */
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     grid-auto-rows: auto; /* Altura base para las filas */
     gap: 1.5em;
@@ -228,7 +225,7 @@ h1.couple-names {
   height: 20px;
 }
 
-/* --- MODALES (IGUAL QUE ANTES) --- */
+/* --- MODALES --- */
 .modal {
   display: none;
   position: fixed;

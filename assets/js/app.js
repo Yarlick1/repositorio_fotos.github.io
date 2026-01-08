@@ -1,18 +1,18 @@
 // ======================================================================
-// ⚠️ CONFIGURACIÓN CLAVE - DEBES CAMBIAR ESTOS VALORES ⚠️
+// ⚠️ CONFIGURACIÓN ⚠️
 // ======================================================================
 
-// 1. CLOUDINARY: Tu Cloud Name (ej: 'djdg7922d'). Obténlo al crear tu cuenta gratuita.
+// Tu Cloud Name 
 const CLOUDINARY_CLOUD_NAME = "daxothobr";
-// 2. CLOUDINARY: El Preset de Subida. DEBE ser 'Unsigned' para seguridad.
+// CLOUDINARY
 const CLOUDINARY_UPLOAD_PRESET = "boda_preset";
 
-// 3. GOOGLE APPS SCRIPT: La URL de tu Despliegue de la API de Google Sheets.
+// GOOGLE APPS SCRIPT
 const SCRIPT_WEB_APP_URL =
     "https://script.google.com/macros/s/AKfycbyKTqJuXFLjZSdULXDcvthHsxOaL0ojwm-j2C2_StlR48M9cawyhJ71SlKQ5qTIRVs1Uw/exec";
 
 // ======================================================================
-// Referencias a los elementos del HTML (Actualizado para el nuevo diseño)
+// Referencias a los elementos del HTML
 const photoContainer = document.getElementById("photo-container");
 const loadingMessage = document.getElementById("loading-message");
 
@@ -22,7 +22,6 @@ const lightboxModal = document.getElementById("lightbox-modal");
 const lightboxImage = document.getElementById("lightbox-image");
 
 // Formulario y Botones
-// NOTA: Aquí estaba el error, actualizamos el ID del botón de apertura
 const uploadBtn = document.getElementById("upload-trigger-btn");
 const uploadForm = document.getElementById("upload-form");
 const submitBtn = document.getElementById("submit-btn");
@@ -30,7 +29,7 @@ const statusMessage = document.getElementById("status-message");
 
 let lastPhotoCount = 0;
 
-// --- 1. LÓGICA DE LA GALERÍA (CARGA DE FOTOS) ---
+// --- 1. LÓGICA DE LA GALERÍA ---
 
 async function fetchPhotos() {
     try {
@@ -87,7 +86,7 @@ async function fetchPhotos() {
 
                 photoContainer.appendChild(photoDiv);
             });
-            // Después de añadir tus fotos al contenedor:
+            // Después de añadir las fotos al contenedor:
             AOS.refresh();
         }
 
@@ -281,7 +280,7 @@ const originalCloseModal = window.closeModal;
 window.closeModal = function (event) {
     // Llamamos a la lógica anterior
     if (typeof originalCloseModal === "function") {
-        // Si tienes la lógica vieja, la dejamos que corra
+        // Si existe la lógica vieja, la dejamos que corra
         if (
             !event ||
             event.target === uploadModal ||
@@ -349,5 +348,5 @@ function previewImages(input) {
     }
 }
 
-// No olvides vincularla
+// Vinculo
 window.previewImages = previewImages;
