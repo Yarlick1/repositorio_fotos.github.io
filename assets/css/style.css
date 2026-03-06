@@ -396,6 +396,49 @@ h1.couple-names {
     animation: fadeIn 0.5s;
 }
 
+/* Contenedor relativo para posicionar el texto */
+/* El texto flotante */
+.upload-tooltip {
+    background-color: rgba(198, 156, 109, 0.9); /* Nuestro dorado con transparencia */
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-family: 'Lato', sans-serif;
+    margin-bottom: 7em;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    white-space: nowrap;
+    pointer-events: none; /* Para que no estorbe al hacer clic */
+    animation: floatTooltip 3s infinite ease-in-out;
+    position: absolute;
+}
+
+/* Pequeño triángulo debajo del texto */
+.upload-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: rgba(198, 156, 109, 0.9) transparent transparent transparent;
+}
+
+/* Animación sutil de subir y bajar */
+@keyframes floatTooltip {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* Ocultar en pantallas muy pequeñas si prefieres que sea aún más discreto */
+@media (max-width: 480px) {
+    .upload-tooltip {
+        font-size: 0.75rem;
+        padding: 5px 12px;
+    }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
