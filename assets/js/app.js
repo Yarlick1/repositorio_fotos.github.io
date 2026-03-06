@@ -1,32 +1,25 @@
 // ======================================================================
-// ⚠️ CONFIGURACIÓN ⚠️
+// ⚠️ CONFIGURACIÓN
 // ======================================================================
-
-// Tu Cloud Name 
 const CLOUDINARY_CLOUD_NAME = "daxothobr";
-// CLOUDINARY
 const CLOUDINARY_UPLOAD_PRESET = "boda_preset";
-
-// GOOGLE APPS SCRIPT
-const SCRIPT_WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbyKTqJuXFLjZSdULXDcvthHsxOaL0ojwm-j2C2_StlR48M9cawyhJ71SlKQ5qTIRVs1Uw/exec";
+const SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyKTqJuXFLjZSdULXDcvthHsxOaL0ojwm-j2C2_StlR48M9cawyhJ71SlKQ5qTIRVs1Uw/exec";
 
 // ======================================================================
 // Referencias a los elementos del HTML
 const photoContainer = document.getElementById("photo-container");
 const loadingMessage = document.getElementById("loading-message");
-
-// Modales
 const uploadModal = document.getElementById("upload-modal");
 const lightboxModal = document.getElementById("lightbox-modal");
 const lightboxImage = document.getElementById("lightbox-image");
-
-// Formulario y Botones
 const uploadBtn = document.getElementById("upload-trigger-btn");
 const uploadForm = document.getElementById("upload-form");
 const submitBtn = document.getElementById("submit-btn");
 const statusMessage = document.getElementById("status-message");
 
+// Variables de estado
+let allPhotos = [];
+let currentIndex = 0;
 let lastPhotoCount = 0;
 
 // --- 1. LÓGICA DE LA GALERÍA ---
@@ -36,317 +29,221 @@ async function fetchPhotos() {
         const response = await fetch(`${SCRIPT_WEB_APP_URL}?action=get`);
         if (!response.ok) throw new Error("Error de conexión");
         const data = await response.json();
-
         const photos = data.photos || [];
 
         // Si no hay fotos nuevas, no hacemos nada
-        if (photos.length === lastPhotoCount && lastPhotoCount !== 0) {
-            return;
-        }
+        if (photos.length === lastPhotoCount && lastPhotoCount !== 0) return;
 
-        // Ocultar mensaje de carga si hay fotos
-        if (photos.length > 0 && loadingMessage) {
-            loadingMessage.style.display = "none"; // Usamos style.display para asegurar compatibilidad
-        } else if (photos.length === 0 && loadingMessage) {
+        // Actualizamos la lista global para el slider (más nuevas primero)
+        allPhotos = photos.map(p => p.url).reverse();
+
+        if (allPhotos.length > 0 && loadingMessage) {
+            loadingMessage.style.display = "none";
+        } else if (allPhotos.length === 0 && loadingMessage) {
             loadingMessage.textContent = "Sé el primero en subir una foto...";
         }
 
-        // Ordenar: Las más nuevas primero
-        photos.reverse();
+        // Si hay cambios, renderizamos el grid
+        if (allPhotos.length !== lastPhotoCount) {
+            photoContainer.innerHTML = "";
 
-        // Si hay cambios en la cantidad de fotos, actualizamos el grid
-        if (photos.length > lastPhotoCount) {
-            photoContainer.innerHTML = ""; // Limpiamos para evitar duplicados visuales
-
-            photos.forEach((photo) => {
+            allPhotos.forEach((url, index) => {
                 const photoDiv = document.createElement("div");
-                // Mantenemos las clases del CSS nuevo
+                photoDiv.className = "photo-card"; // Usamos la clase para el CSS
                 photoDiv.style.borderRadius = "4px";
                 photoDiv.style.overflow = "hidden";
                 photoDiv.style.cursor = "pointer";
-                photoDiv.dataset.aos = "fade-up";
-                photoDiv.dataset.aosDuration = "10000";
 
-                // URLs
-                const thumbnailImageUrl = photo.url.replace(
-                    "/upload/",
-                    "/upload/w_400,c_scale/"
-                );
-                const fullImageUrl = photo.url;
+                // Animación AOS
+                photoDiv.setAttribute("data-aos", "fade-up");
+                photoDiv.setAttribute("data-aos-duration", "1000");
 
-                photoDiv.innerHTML = `
-                    <img src="${thumbnailImageUrl}" 
-                         loading="lazy" 
-                         style="width: 100%; display: block;"
-                         data-full-url="${fullImageUrl}"> 
-                `;
+                const thumbnail = url.replace("/upload/", "/upload/w_400,c_scale/");
 
-                // Click para abrir pantalla completa
-                photoDiv.addEventListener("click", () => openLightbox(fullImageUrl));
+                photoDiv.innerHTML = `<img src="${thumbnail}" loading="lazy" style="width: 100%; display: block;">`;
+
+                // Al hacer clic, abrimos por ÍNDICE para que el slider funcione
+                photoDiv.onclick = () => openLightbox(index);
 
                 photoContainer.appendChild(photoDiv);
             });
-            // Después de añadir las fotos al contenedor:
-            AOS.refresh();
+
+            if (window.AOS) AOS.refresh();
         }
 
-        lastPhotoCount = photos.length;
+        lastPhotoCount = allPhotos.length;
     } catch (error) {
         console.error("Error cargando fotos:", error);
     }
 }
 
-function initPolling() {
-    fetchPhotos();
-    setInterval(fetchPhotos, 5000); // Actualiza cada 5 segundos
+// --- 2. LÓGICA DEL LIGHTBOX (SLIDER) ---
+
+function openLightbox(index) {
+    currentIndex = index;
+    updateLightboxImage();
+    if (lightboxModal) lightboxModal.style.display = "flex";
 }
 
-// --- 2. LÓGICA DEL LIGHTBOX (PANTALLA COMPLETA) ---
+function updateLightboxImage() {
+    if (!lightboxImage) return;
+    lightboxImage.style.opacity = "0";
 
-function openLightbox(imageUrl) {
-    if (lightboxImage && lightboxModal) {
-        lightboxImage.src = imageUrl;
-        lightboxModal.style.display = "flex";
-    }
+    setTimeout(() => {
+        lightboxImage.src = allPhotos[currentIndex];
+        lightboxImage.style.opacity = "1";
+    }, 150);
+}
+
+function nextPhoto(event) {
+    if (event) event.stopPropagation();
+    currentIndex = (currentIndex + 1) % allPhotos.length;
+    updateLightboxImage();
+}
+
+function prevPhoto(event) {
+    if (event) event.stopPropagation();
+    currentIndex = (currentIndex - 1 + allPhotos.length) % allPhotos.length;
+    updateLightboxImage();
 }
 
 function closeLightbox(event) {
-    // Si se pasa evento, verificar click fuera. Si no, cerrar directo.
-    if (
-        !event ||
-        event.target === lightboxModal ||
-        event.target.classList.contains("close-lightbox")
-    ) {
-        lightboxModal.style.display = "none";
-        lightboxImage.src = ""; // Limpiar src
+    if (!event || event.target === lightboxModal || event.target.classList.contains("close-lightbox")) {
+        if (lightboxModal) lightboxModal.style.display = "none";
+        if (lightboxImage) lightboxImage.src = "";
     }
 }
 
-// Hacemos las funciones globales para que funcionen con los onclick del HTML
-window.openLightbox = openLightbox;
-window.closeLightbox = closeLightbox;
-
-// --- 3. LÓGICA DE SUBIDA (FORMULARIO) ---
-
-function openModal() {
-    if (uploadModal) uploadModal.style.display = "flex";
-    if (statusMessage) {
-        statusMessage.textContent = "";
-        statusMessage.style.display = "none";
+// Navegación por teclado
+document.addEventListener('keydown', (e) => {
+    if (lightboxModal && lightboxModal.style.display === 'flex') {
+        if (e.key === "ArrowRight") nextPhoto();
+        if (e.key === "ArrowLeft") prevPhoto();
+        if (e.key === "Escape") closeLightbox();
     }
-    if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "ENVIAR RECUERDO";
-    }
-}
-
-function closeModal(event) {
-    if (
-        !event ||
-        event.target === uploadModal ||
-        event.target.getAttribute("onclick")
-    ) {
-        uploadModal.style.display = "none";
-        uploadForm.reset();
-        const fileLabel = document.getElementById("file-label");
-        if (fileLabel) fileLabel.textContent = "Toca para seleccionar foto";
-    }
-}
-window.openModal = openModal;
-window.closeModal = closeModal;
-
-async function handleUpload(event) {
-    event.preventDefault();
-
-    const fileInput = document.getElementById('photo-file');
-    const files = fileInput.files;
-    if (!files || files.length === 0) return;
-
-    // Limitar a 5 fotos para evitar abusos o errores de red
-    if (files.length > 5) {
-        alert("Por favor, selecciona máximo 5 fotos a la vez para asegurar que se suban correctamente.");
-        return;
-    }
-
-    submitBtn.disabled = true;
-    statusMessage.style.display = 'block';
-
-    let successCount = 0;
-
-    // Procesar cada archivo uno por uno
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const currentNum = i + 1;
-
-        statusMessage.textContent = `⏳ Subiendo ${currentNum} de ${files.length}...`;
-
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        try {
-            // 1. Subir a Cloudinary
-            const cloudinaryResponse = await fetch(
-                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-                { method: 'POST', body: formData }
-            );
-
-            const cloudinaryData = await cloudinaryResponse.json();
-            const photoUrl = cloudinaryData.secure_url;
-
-            // 2. Guardar en Google Sheets (uno por uno)
-            await fetch(SCRIPT_WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'add', url: photoUrl })
-            });
-
-            successCount++;
-        } catch (error) {
-            console.error(`Error en foto ${currentNum}:`, error);
-        }
-    }
-
-    // Finalización
-    statusMessage.textContent = `✅ ¡${successCount} fotos compartidas con éxito!`;
-    statusMessage.style.color = 'green';
-
-
-
-    await fetchPhotos(); // Refrescar galería una sola vez al final
-
-    setTimeout(() => {
-        closeModal();
-        statusMessage.style.color = '';
-    }, 2000);
-
-    input.value = ""; // Limpia los archivos seleccionados
-    document.getElementById('preview-container').innerHTML = ""; // Limpia las miniaturas
-}
-
-// --- 4. INICIALIZACIÓN SEGURA ---
-
-document.addEventListener("DOMContentLoaded", () => {
-    // Solo añadimos listeners si los elementos existen para evitar errores
-    if (uploadBtn) {
-        uploadBtn.addEventListener("click", openModal);
-    }
-
-    if (uploadForm) {
-        uploadForm.addEventListener("submit", handleUpload);
-    }
-
-    // Iniciar la galería
-    initPolling();
 });
 
-/**
- * Función para mostrar la vista previa de la foto seleccionada
- * y solucionar el error de ReferenceError
- */
-function previewImage(input) {
-    const previewContainer = document.getElementById("preview-container");
-    const previewImg = document.getElementById("image-preview");
-    const instructions = document.getElementById("upload-instructions");
-    const fileLabel = document.getElementById("file-label");
-
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-
-        reader.onload = function (e) {
-            // Mostrar la imagen
-            previewImg.src = e.target.result;
-            previewContainer.classList.remove("hidden");
-
-            // Ocultar las instrucciones de "Toca aquí" para que no estorben
-            instructions.classList.add("hidden");
-
-            // Cambiar el texto por el nombre del archivo
-            fileLabel.textContent = "Foto seleccionada: " + input.files[0].name;
-        };
-
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-// Vinculamos la función al objeto window para que el HTML pueda verla
-window.previewImage = previewImage;
-
-/**
- * Modificamos la función closeModal para que también limpie la vista previa
- */
-const originalCloseModal = window.closeModal;
-window.closeModal = function (event) {
-    // Llamamos a la lógica anterior
-    if (typeof originalCloseModal === "function") {
-        // Si existe la lógica vieja, la dejamos que corra
-        if (
-            !event ||
-            event.target === uploadModal ||
-            event.target.getAttribute("onclick")
-        ) {
-            uploadModal.style.display = "none";
-        }
-    }
-
-    // Limpiamos la vista previa al cerrar
-    document.getElementById("upload-form").reset();
-    document.getElementById("preview-container").classList.add("hidden");
-    document.getElementById("upload-instructions").classList.remove("hidden");
-    document.getElementById("file-label").textContent =
-        "Toca para Tomar Foto o Elegir de Galería";
-};
+// --- 3. LÓGICA DE SUBIDA Y PREVISUALIZACIÓN ---
 
 function previewImages(input) {
     const previewContainer = document.getElementById('preview-container');
     const instructions = document.getElementById('upload-instructions');
     const fileLabel = document.getElementById('file-label');
 
-    // Limpiar contenido previo
+    if (!previewContainer) return;
     previewContainer.innerHTML = '';
 
     if (input.files && input.files.length > 0) {
-        // Validar límite de 5 fotos de inmediato
         if (input.files.length > 5) {
-            alert("¡Ups! Por favor selecciona solo hasta 5 fotos para que suban rápido.");
-            input.value = ""; // Resetear selección
+            alert("¡Ups! Por favor selecciona solo hasta 5 fotos.");
+            input.value = "";
             return;
         }
 
         previewContainer.classList.remove('hidden');
-        instructions.classList.add('hidden');
+        if (instructions) instructions.classList.add('hidden');
         fileLabel.textContent = `¡Excelente! ${input.files.length} fotos listas`;
-        fileLabel.style.color = "#C69C6D";
 
-        // Mostrar miniaturas de todas las fotos seleccionadas
         Array.from(input.files).forEach((file) => {
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = (e) => {
                 const wrapper = document.createElement('div');
-                wrapper.style.aspectRatio = "1/1";
-                wrapper.style.overflow = "hidden";
-                wrapper.style.borderRadius = "4px";
-                wrapper.style.border = "1px solid #eee";
-
+                wrapper.style.cssText = "aspect-ratio:1/1; overflow:hidden; border-radius:4px; border:1px solid #eee;";
                 const img = document.createElement('img');
                 img.src = e.target.result;
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'cover';
-
+                img.style.cssText = "width:100%; height:100%; object-fit:cover;";
                 wrapper.appendChild(img);
                 previewContainer.appendChild(wrapper);
             }
             reader.readAsDataURL(file);
         });
-    } else {
-        // Si cancelan la selección, volvemos al estado inicial
-        previewContainer.classList.add('hidden');
-        instructions.classList.remove('hidden');
-        fileLabel.textContent = "Toca para elegir fotos (Máx. 5)";
     }
 }
 
-// Vinculo
+async function handleUpload(event) {
+    event.preventDefault();
+    const fileInput = document.getElementById('photo-file');
+    const files = fileInput ? fileInput.files : [];
+    if (files.length === 0) return;
+
+    submitBtn.disabled = true;
+    statusMessage.style.display = 'block';
+    statusMessage.style.color = 'black';
+
+    let successCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+        const currentNum = i + 1;
+        statusMessage.textContent = `⏳ Subiendo ${currentNum} de ${files.length}...`;
+
+        const formData = new FormData();
+        formData.append('file', files[i]);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        try {
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            await fetch(SCRIPT_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'add', url: data.secure_url })
+            });
+            successCount++;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    statusMessage.textContent = `✅ ¡${successCount} fotos compartidas!`;
+    statusMessage.style.color = 'green';
+
+    setTimeout(() => {
+        closeModal();
+        fetchPhotos();
+    }, 2000);
+}
+
+// --- 4. MODALES Y CIERRE ---
+
+function openModal() {
+    if (uploadModal) uploadModal.style.display = "flex";
+    if (statusMessage) statusMessage.style.display = "none";
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "ENVIAR RECUERDO";
+    }
+}
+
+function closeModal() {
+    if (uploadModal) uploadModal.style.display = "none";
+    if (uploadForm) uploadForm.reset();
+    const pc = document.getElementById('preview-container');
+    const ui = document.getElementById('upload-instructions');
+    if (pc) pc.innerHTML = "";
+    if (ui) ui.classList.remove('hidden');
+    const fl = document.getElementById('file-label');
+    if (fl) fl.textContent = "Toca para elegir fotos (Máx. 5)";
+}
+
+// --- 5. INICIALIZACIÓN ---
+
+window.nextPhoto = nextPhoto;
+window.prevPhoto = prevPhoto;
+window.openLightbox = openLightbox;
+window.closeLightbox = closeLightbox;
+window.openModal = openModal;
+window.closeModal = closeModal;
 window.previewImages = previewImages;
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (uploadBtn) uploadBtn.onclick = openModal;
+    if (uploadForm) uploadForm.onsubmit = handleUpload;
+
+    fetchPhotos();
+    setInterval(fetchPhotos, 8000); // Polling cada 8 seg para no saturar
+});

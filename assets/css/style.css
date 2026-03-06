@@ -1,10 +1,10 @@
 /* --- VARIABLES Y RESET --- */
 :root {
-  --gold: #c69c6d;
-  --gold-dark: #a67c52;
-  --cream: #faf9f6;
-  --white: #ffffff;
-  --text-gray: #666666;
+  --gold: #78814A;
+  --gold-dark: #7D835F;
+  --cream: #F2E5D2;
+  /* --white: #ffffff; */
+  --text-gray: #7D835F;
 }
 
 * {
@@ -33,7 +33,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background-image: url("../images/anillos.jpg");
+  background-image: url("../images/anillos.png");
   background-size: cover;
   background-position: center;
 }
@@ -191,7 +191,7 @@ h1.couple-names {
   bottom: 0;
   left: 0;
   width: 100%;
-  background-color: #faf3e0; /* Color crema suave/dorado muy claro */
+  background-color: #7D835F; /* Color crema suave/dorado muy claro */
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
@@ -205,8 +205,8 @@ h1.couple-names {
 
 /* Botón de Subir (Estilo botón marrón/dorado sólido) */
 #upload-trigger-btn {
-  background-color: #9c7c58; /* Tono marrón dorado oscuro */
-  color: white;
+  background-color: #F2E5D2; /* Tono marrón dorado oscuro */
+  color: #7D835F;
   border: none;
   padding: 10px 25px;
   border-radius: 5px;
@@ -258,10 +258,40 @@ h1.couple-names {
 }
 
 /* Estilos Lightbox */
+/* Flechas de navegación del Lightbox */
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    font-size: 30px;
+    padding: 15px 10px;
+    cursor: pointer;
+    z-index: 210;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.nav-arrow:hover {
+    background: rgba(198, 156, 109, 0.8); /* Nuestro dorado */
+}
+
+.prev-arrow { left: 10px; }
+.next-arrow { right: 10px; }
+
+/* Para que la imagen del lightbox sea deslizable suavemente */
+#lightbox-image {
+    transition: opacity 0.3s ease-in-out;
+}
+/* modificaciones (arriba) */
+
+
 #lightbox-image {
   max-width: 100%;
   max-h: 90vh;
-  border: 2px solid white;
+  border-radius: 10px
 }
 .close-lightbox {
   position: absolute;
