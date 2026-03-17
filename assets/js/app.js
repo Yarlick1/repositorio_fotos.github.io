@@ -287,15 +287,12 @@ async function handleUpload(event) {
     submitBtn.disabled = true;
     statusMessage.style.display = 'block';
     statusMessage.style.color = 'black';
+    statusMessage.textContent = `⏳ Subiendo ${selectedFiles.length} fotos...`;
 
-    let successCount = 0;
-
-    for (let i = 0; i < selectedFiles.length; i++) {
-        const currentNum = i + 1;
-        statusMessage.textContent = `⏳ Subiendo ${currentNum} de ${selectedFiles.length}...`;
-
+    // Subir todas las fotos en paralelo para reducir el tiempo
+    const uploadPromises = selectedFiles.map(async (file, index) => {
         const formData = new FormData();
-        formData.append('file', selectedFiles[i]);
+        formData.append('file', file);
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
         try {
@@ -303,22 +300,44 @@ async function handleUpload(event) {
                 method: 'POST',
                 body: formData
             });
+
+            if (!res.ok) {
+                throw new Error(`Error HTTP: ${res.status}`);
+            }
+
             const data = await res.json();
 
-            await fetch(SCRIPT_WEB_APP_URL, {
+            // Enviar a Google Apps Script
+            const scriptRes = await fetch(SCRIPT_WEB_APP_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'add', url: data.secure_url })
             });
-            successCount++;
-        } catch (e) {
-            console.error(e);
-        }
-    }
 
-    statusMessage.textContent = `✅ ¡${successCount} fotos compartidas!`;
-    statusMessage.style.color = 'green';
+            return { success: true, index, url: data.secure_url };
+        } catch (error) {
+            console.error(`Error subiendo foto ${index + 1}:`, error);
+            return { success: false, index, error: error.message };
+        }
+    });
+
+    // Esperar a que todas las subidas terminen
+    const results = await Promise.allSettled(uploadPromises);
+    const successCount = results.filter(result =>
+        result.status === 'fulfilled' && result.value.success
+    ).length;
+
+    if (successCount === selectedFiles.length) {
+        statusMessage.textContent = `✅ ¡Todas las ${successCount} fotos compartidas exitosamente!`;
+        statusMessage.style.color = 'green';
+    } else if (successCount > 0) {
+        statusMessage.textContent = `⚠️ ${successCount} de ${selectedFiles.length} fotos subidas. Algunas fallaron.`;
+        statusMessage.style.color = 'orange';
+    } else {
+        statusMessage.textContent = `❌ Error al subir las fotos. Inténtalo de nuevo.`;
+        statusMessage.style.color = 'red';
+    }
 
     setTimeout(() => {
         closeModal();
