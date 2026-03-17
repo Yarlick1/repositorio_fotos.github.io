@@ -127,11 +127,9 @@ document.addEventListener('keydown', (e) => {
 
 function previewImages(input) {
     const previewContainer = document.getElementById('preview-container');
-    const instructions = document.getElementById('upload-instructions');
-    const fileLabel = document.getElementById('file-label');
+    const uploadOptions = document.getElementById('upload-options');
 
     if (!previewContainer) return;
-    previewContainer.innerHTML = '';
 
     if (input.files && input.files.length > 0) {
         if (input.files.length > 5) {
@@ -140,9 +138,9 @@ function previewImages(input) {
             return;
         }
 
+        previewContainer.innerHTML = '';
         previewContainer.classList.remove('hidden');
-        if (instructions) instructions.classList.add('hidden');
-        fileLabel.textContent = `¡Excelente! ${input.files.length} fotos listas`;
+        if (uploadOptions) uploadOptions.classList.add('hidden');
 
         Array.from(input.files).forEach((file) => {
             const reader = new FileReader();
@@ -162,9 +160,14 @@ function previewImages(input) {
 
 async function handleUpload(event) {
     event.preventDefault();
-    const fileInput = document.getElementById('photo-file');
-    const files = fileInput ? fileInput.files : [];
-    if (files.length === 0) return;
+    const cameraInput = document.getElementById('camera-file');
+    const galleryInput = document.getElementById('gallery-file');
+    const cameraFiles = cameraInput ? cameraInput.files : [];
+    const galleryFiles = galleryInput ? galleryInput.files : [];
+
+    // Combinar archivos de ambas fuentes
+    const allFiles = Array.from(cameraFiles).concat(Array.from(galleryFiles));
+    if (allFiles.length === 0) return;
 
     submitBtn.disabled = true;
     statusMessage.style.display = 'block';
@@ -172,12 +175,12 @@ async function handleUpload(event) {
 
     let successCount = 0;
 
-    for (let i = 0; i < files.length; i++) {
+    for (let i = 0; i < allFiles.length; i++) {
         const currentNum = i + 1;
-        statusMessage.textContent = `⏳ Subiendo ${currentNum} de ${files.length}...`;
+        statusMessage.textContent = `⏳ Subiendo ${currentNum} de ${allFiles.length}...`;
 
         const formData = new FormData();
-        formData.append('file', files[i]);
+        formData.append('file', allFiles[i]);
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
         try {
@@ -222,12 +225,21 @@ function openModal() {
 function closeModal() {
     if (uploadModal) uploadModal.style.display = "none";
     if (uploadForm) uploadForm.reset();
+
+    // Limpiar inputs file
+    const cameraInput = document.getElementById('camera-file');
+    const galleryInput = document.getElementById('gallery-file');
+    if (cameraInput) cameraInput.value = "";
+    if (galleryInput) galleryInput.value = "";
+
+    // Limpiar vista previa
     const pc = document.getElementById('preview-container');
-    const ui = document.getElementById('upload-instructions');
-    if (pc) pc.innerHTML = "";
-    if (ui) ui.classList.remove('hidden');
-    const fl = document.getElementById('file-label');
-    if (fl) fl.textContent = "Toca para elegir fotos (Máx. 5)";
+    const uo = document.getElementById('upload-options');
+    if (pc) {
+        pc.innerHTML = "";
+        pc.classList.add('hidden');
+    }
+    if (uo) uo.classList.remove('hidden');
 }
 
 // --- 5. INICIALIZACIÓN ---
