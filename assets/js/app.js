@@ -18,10 +18,12 @@ const submitBtn = document.getElementById("submit-btn");
 const statusMessage = document.getElementById("status-message");
 
 // Variables de estado
+const MAX_FILES = 5;
 let allPhotos = [];
 let currentIndex = 0;
 let lastPhotoCount = 0;
 let selectedFiles = []; // Array para mantener los archivos seleccionados
+let isUploading = false; // Bloquea cambios mientras se suben las fotos
 
 // --- 1. LÓGICA DE LA GALERÍA ---
 
@@ -132,11 +134,25 @@ function previewImages(input) {
 
     if (!previewContainer) return;
 
+    if (isUploading) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Subida en curso',
+            text: 'Espera a que termine la subida para agregar más fotos.'
+        });
+        input.value = "";
+        return;
+    }
+
     if (input.files && input.files.length > 0) {
         const totalFiles = selectedFiles.length + input.files.length;
 
-        if (totalFiles > 5) {
-            alert(`¡Ups! Solo puedes seleccionar hasta 5 fotos en total. Ya tienes ${selectedFiles.length}, y estás intentando agregar ${input.files.length}.`);
+        if (totalFiles > MAX_FILES) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Máximo alcanzado',
+                text: `Solo puedes seleccionar hasta ${MAX_FILES} fotos en total. Ya tienes ${selectedFiles.length}.`
+            });
             input.value = "";
             return;
         }
@@ -162,54 +178,65 @@ function renderPreviewPhotos() {
         if (uploadOptions) uploadOptions.classList.add('hidden');
 
         selectedFiles.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const wrapper = document.createElement('div');
-                wrapper.style.cssText = "position: relative; aspect-ratio:1/1; overflow:hidden; border-radius:4px; border:1px solid #eee;";
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = "position: relative; aspect-ratio:1/1; overflow:hidden; border-radius:4px; border:1px solid #eee;";
+            wrapper.dataset.index = index;
 
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.cssText = "width:100%; height:100%; object-fit:cover;";
-                wrapper.appendChild(img);
+            const img = document.createElement('img');
+            const objectUrl = URL.createObjectURL(file);
+            img.src = objectUrl;
+            img.onload = () => URL.revokeObjectURL(objectUrl);
+            img.style.cssText = "width:100%; height:100%; object-fit:cover;";
+            wrapper.appendChild(img);
 
-                // Botón de eliminar
-                const deleteBtn = document.createElement('button');
-                deleteBtn.type = 'button';
-                deleteBtn.innerHTML = '×';
-                deleteBtn.style.cssText = `
-                    position: absolute;
-                    top: 4px;
-                    right: 4px;
-                    width: 28px;
-                    height: 28px;
-                    padding: 0;
-                    background: rgba(255, 0, 0, 0.8);
-                    color: white;
-                    border: none;
-                    border-radius: 50%;
-                    font-size: 20px;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: background 0.2s;
-                `;
-                deleteBtn.onmouseover = () => { deleteBtn.style.background = 'rgba(255, 0, 0, 1)'; };
-                deleteBtn.onmouseout = () => { deleteBtn.style.background = 'rgba(255, 0, 0, 0.8)'; };
-                deleteBtn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    selectedFiles.splice(index, 1);
-                    renderPreviewPhotos(); // Re-renderizar
-                };
-                wrapper.appendChild(deleteBtn);
-                previewContainer.appendChild(wrapper);
-            }
-            reader.readAsDataURL(file);
+            // Botón de eliminar
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.innerHTML = '×';
+            deleteBtn.disabled = isUploading;
+            deleteBtn.style.cssText = `
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                width: 28px;
+                height: 28px;
+                padding: 0;
+                background: ${isUploading ? 'rgba(150,150,150,0.6)' : 'rgba(255, 0, 0, 0.8)'};
+                color: white;
+                border: none;
+                border-radius: 50%;
+                font-size: 20px;
+                cursor: ${isUploading ? 'not-allowed' : 'pointer'};
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s;
+            `;
+            deleteBtn.onmouseover = () => { if (!isUploading) deleteBtn.style.background = 'rgba(255, 0, 0, 1)'; };
+            deleteBtn.onmouseout = () => { if (!isUploading) deleteBtn.style.background = 'rgba(255, 0, 0, 0.8)'; };
+            deleteBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isUploading) {
+                    Swal.fire({ icon: 'info', title: 'Subida en curso', text: 'No puedes eliminar fotos mientras se están subiendo.' });
+                    return;
+                }
+                selectedFiles.splice(index, 1);
+                renderPreviewPhotos(); // Re-renderizar
+            };
+            wrapper.appendChild(deleteBtn);
+
+            // Progress UI (hidden until upload starts)
+            const progressWrap = document.createElement('div');
+            progressWrap.className = 'progress-wrap';
+            progressWrap.innerHTML = `<div class="progress-bar" style="width:0%"></div><div class="progress-text">0%</div>`;
+            progressWrap.style.display = 'none';
+            wrapper.appendChild(progressWrap);
+            previewContainer.appendChild(wrapper);
         });
 
-        // Mostrar opción de agregar más si hay menos de 5
-        if (selectedFiles.length < 5) {
+        // Mostrar opción de agregar más si hay menos de MAX_FILES
+        if (selectedFiles.length < MAX_FILES) {
             const addMoreContainer = document.createElement('div');
             addMoreContainer.style.cssText = `
                 aspect-ratio: 1/1;
@@ -220,14 +247,13 @@ function renderPreviewPhotos() {
                 justify-content: center;
                 flex-direction: column;
                 gap: 8px;
-                cursor: pointer;
+                cursor: ${isUploading ? 'not-allowed' : 'pointer'};
                 background: #fdfdfd;
                 transition: all 0.3s ease;
                 padding: 10px;
             `;
             addMoreContainer.onmouseover = () => {
-                addMoreContainer.style.background = '#f5f5f5';
-                addMoreContainer.style.borderColor = 'var(--gold-dark)';
+                if (!isUploading) { addMoreContainer.style.background = '#f5f5f5'; addMoreContainer.style.borderColor = 'var(--gold-dark)'; }
             };
             addMoreContainer.onmouseout = () => {
                 addMoreContainer.style.background = '#fdfdfd';
@@ -240,18 +266,22 @@ function renderPreviewPhotos() {
             addMoreContainer.appendChild(addIcon);
 
             const addText = document.createElement('div');
-            addText.style.cssText = 'font-size: 0.8rem; color: var(--text-gray); text-align: center;';
-            addText.textContent = `Agregar más\n(${selectedFiles.length}/5)`;
+            addText.style.cssText = 'font-size: 0.8rem; color: var(--text-gray); text-align: center; white-space: pre-line;';
+            addText.textContent = `Agregar más\n(${selectedFiles.length}/${MAX_FILES})`;
             addMoreContainer.appendChild(addText);
 
             const cameraInput = document.getElementById('camera-file');
             const galleryInput = document.getElementById('gallery-file');
 
             addMoreContainer.addEventListener('click', async (e) => {
+                if (isUploading) {
+                    Swal.fire({ icon: 'info', title: 'Subida en curso', text: 'No puedes agregar fotos mientras se están subiendo.' });
+                    return;
+                }
                 // Mostrar opciones para agregar más con SweetAlert2
                 const result = await Swal.fire({
                     title: '¿Cómo quieres agregar más fotos?',
-                    text: `Ya tienes ${selectedFiles.length} fotos. Puedes agregar hasta ${5 - selectedFiles.length} más.`,
+                    text: `Ya tienes ${selectedFiles.length} fotos. Puedes agregar hasta ${MAX_FILES - selectedFiles.length} más.`,
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: '📷 Tomar Foto',
@@ -282,67 +312,147 @@ function renderPreviewPhotos() {
 
 async function handleUpload(event) {
     event.preventDefault();
-    if (selectedFiles.length === 0) return;
+    if (selectedFiles.length === 0 || isUploading) return;
 
+    isUploading = true;
     submitBtn.disabled = true;
     statusMessage.style.display = 'block';
     statusMessage.style.color = 'black';
-    statusMessage.textContent = `⏳ Subiendo ${selectedFiles.length} fotos...`;
+    statusMessage.textContent = `⏳ Preparando ${selectedFiles.length} fotos para subir...`;
 
-    // Subir todas las fotos en paralelo para reducir el tiempo
-    const uploadPromises = selectedFiles.map(async (file, index) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    // Deshabilitar botones de agregar
+    const cameraBtn = document.getElementById('camera-btn');
+    const galleryBtn = document.getElementById('gallery-btn');
+    if (cameraBtn) cameraBtn.disabled = true;
+    if (galleryBtn) galleryBtn.disabled = true;
+    renderPreviewPhotos();
 
-        try {
-            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                method: 'POST',
-                body: formData
-            });
+    // Comprimir/normalizar imágenes antes de subir para acelerar la subida
+    const compressedFiles = await Promise.all(selectedFiles.map(f => compressImage(f)));
 
-            if (!res.ok) {
-                throw new Error(`Error HTTP: ${res.status}`);
-            }
+    statusMessage.textContent = `⏳ Subiendo ${compressedFiles.length} fotos...`;
 
-            const data = await res.json();
+    // Usar XMLHttpRequest para poder rastrear progreso por archivo
+    const uploadPromises = compressedFiles.map((file, index) => {
+        return new Promise((resolve) => {
+            const xhr = new XMLHttpRequest();
+            const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-            // Enviar a Google Apps Script
-            const scriptRes = await fetch(SCRIPT_WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'add', url: data.secure_url })
-            });
+            xhr.open('POST', url);
 
-            return { success: true, index, url: data.secure_url };
-        } catch (error) {
-            console.error(`Error subiendo foto ${index + 1}:`, error);
-            return { success: false, index, error: error.message };
-        }
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    updateProgressUI(index, pct);
+                    statusMessage.textContent = `⏳ Subiendo ${index + 1}/${compressedFiles.length} — ${pct}%`;
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        // Fire-and-forget to script
+                        fetch(SCRIPT_WEB_APP_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'add', url: data.secure_url })
+                        }).catch(() => { });
+                        updateProgressUI(index, 100);
+                        resolve({ success: true, index, url: data.secure_url });
+                    } catch (err) {
+                        resolve({ success: false, index, error: 'Invalid JSON' });
+                    }
+                } else {
+                    resolve({ success: false, index, error: `HTTP ${xhr.status}` });
+                }
+            };
+
+            xhr.onerror = () => {
+                resolve({ success: false, index, error: 'Network error' });
+            };
+
+            xhr.send(fd);
+        });
     });
 
-    // Esperar a que todas las subidas terminen
     const results = await Promise.allSettled(uploadPromises);
-    const successCount = results.filter(result =>
-        result.status === 'fulfilled' && result.value.success
-    ).length;
+    const successCount = results.filter(r => r.status === 'fulfilled' && r.value && r.value.success).length;
 
-    if (successCount === selectedFiles.length) {
+    if (successCount === compressedFiles.length) {
         statusMessage.textContent = `✅ ¡Todas las ${successCount} fotos compartidas exitosamente!`;
         statusMessage.style.color = 'green';
     } else if (successCount > 0) {
-        statusMessage.textContent = `⚠️ ${successCount} de ${selectedFiles.length} fotos subidas. Algunas fallaron.`;
+        statusMessage.textContent = `⚠️ ${successCount} de ${compressedFiles.length} fotos subidas. Algunas fallaron.`;
         statusMessage.style.color = 'orange';
     } else {
         statusMessage.textContent = `❌ Error al subir las fotos. Inténtalo de nuevo.`;
         statusMessage.style.color = 'red';
     }
 
+    // Restaurar estado
+    isUploading = false;
+    if (cameraBtn) cameraBtn.disabled = false;
+    if (galleryBtn) galleryBtn.disabled = false;
+    renderPreviewPhotos();
+
     setTimeout(() => {
         closeModal();
         fetchPhotos();
     }, 2000);
+}
+
+// Actualiza la barra de progreso para el índice de preview dado
+function updateProgressUI(index, percent) {
+    const previewContainer = document.getElementById('preview-container');
+    if (!previewContainer) return;
+    const wrapper = previewContainer.children[index];
+    if (!wrapper) return;
+    const progressWrap = wrapper.querySelector('.progress-wrap');
+    if (!progressWrap) return;
+    progressWrap.style.display = 'flex';
+    const bar = progressWrap.querySelector('.progress-bar');
+    const text = progressWrap.querySelector('.progress-text');
+    if (bar) bar.style.width = `${percent}%`;
+    if (text) text.textContent = `${percent}%`;
+}
+
+// Comprime imagen en cliente usando canvas, devuelve File (JPEG)
+async function compressImage(file, maxDim = 1600, quality = 0.8) {
+    try {
+        if (!file.type.startsWith('image/') || file.size < 200 * 1024) return file;
+
+        return await new Promise((resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                let w = img.width;
+                let h = img.height;
+                let scale = 1;
+                if (Math.max(w, h) > maxDim) scale = maxDim / Math.max(w, h);
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(w * scale);
+                canvas.height = Math.round(h * scale);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((blob) => {
+                    URL.revokeObjectURL(url);
+                    if (!blob) return resolve(file);
+                    const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+                    resolve(newFile);
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+            img.src = url;
+        });
+    } catch (e) {
+        console.error('compressImage error', e);
+        return file;
+    }
 }
 
 // --- 4. MODALES Y CIERRE ---

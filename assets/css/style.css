@@ -513,3 +513,32 @@ h1.couple-names {
     font-size: 1rem !important;
     line-height: 1.5 !important;
 }
+
+/* Progress UI for uploads */
+.progress-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255,255,255,0.9);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.progress-bar {
+  height: 8px;
+  background: linear-gradient(90deg, #C69C6D, #78814A);
+  border-radius: 6px;
+  width: 0%;
+  transition: width 0.2s ease;
+  flex: 1 1 auto;
+}
+.progress-text {
+  font-size: 0.8rem;
+  color: var(--text-gray);
+  min-width: 38px;
+  text-align: right;
+}
