@@ -462,3 +462,54 @@ h1.couple-names {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* --- SWEETALERT2 CUSTOM STYLES --- */
+.swal-popup-custom {
+    background: #F2E5D2 !important;
+    border-radius: 15px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+    font-family: 'Lato', sans-serif !important;
+}
+
+.swal-confirm-custom {
+    background-color: #78814A !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: bold !important;
+    padding: 12px 24px !important;
+    transition: all 0.3s ease !important;
+}
+
+.swal-confirm-custom:hover {
+    background-color: #7D835F !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(120, 129, 74, 0.3) !important;
+}
+
+.swal-cancel-custom {
+    background-color: #7D835F !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: bold !important;
+    padding: 12px 24px !important;
+    transition: all 0.3s ease !important;
+}
+
+.swal-cancel-custom:hover {
+    background-color: #6B7153 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(125, 131, 95, 0.3) !important;
+}
+
+.swal-title {
+    color: #78814A !important;
+    font-family: 'Great Vibes', cursive !important;
+    font-size: 2rem !important;
+    margin-bottom: 10px !important;
+}
+
+.swal-text {
+    color: #7D835F !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+}

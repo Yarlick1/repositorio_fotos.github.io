@@ -247,12 +247,27 @@ function renderPreviewPhotos() {
             const cameraInput = document.getElementById('camera-file');
             const galleryInput = document.getElementById('gallery-file');
 
-            addMoreContainer.addEventListener('click', (e) => {
-                // Mostrar opciones para agregar más
-                const option = confirm('¿Quieres tomar una foto (OK) o seleccionar de galería (Cancelar)?');
-                if (option) {
+            addMoreContainer.addEventListener('click', async (e) => {
+                // Mostrar opciones para agregar más con SweetAlert2
+                const result = await Swal.fire({
+                    title: '¿Cómo quieres agregar más fotos?',
+                    text: `Ya tienes ${selectedFiles.length} fotos. Puedes agregar hasta ${5 - selectedFiles.length} más.`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '📷 Tomar Foto',
+                    cancelButtonText: '🖼️ Seleccionar de Galería',
+                    confirmButtonColor: 'var(--gold)',
+                    cancelButtonColor: '#7D835F',
+                    customClass: {
+                        popup: 'swal-popup-custom',
+                        confirmButton: 'swal-confirm-custom',
+                        cancelButton: 'swal-cancel-custom'
+                    }
+                });
+
+                if (result.isConfirmed) {
                     cameraInput.click();
-                } else {
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
                     galleryInput.click();
                 }
             });
