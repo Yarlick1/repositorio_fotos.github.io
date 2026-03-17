@@ -21,6 +21,7 @@ const statusMessage = document.getElementById("status-message");
 let allPhotos = [];
 let currentIndex = 0;
 let lastPhotoCount = 0;
+let selectedFiles = []; // Array para mantener los archivos seleccionados
 
 // --- 1. LÓGICA DE LA GALERÍA ---
 
@@ -132,42 +133,141 @@ function previewImages(input) {
     if (!previewContainer) return;
 
     if (input.files && input.files.length > 0) {
-        if (input.files.length > 5) {
-            alert("¡Ups! Por favor selecciona solo hasta 5 fotos.");
+        const totalFiles = selectedFiles.length + input.files.length;
+
+        if (totalFiles > 5) {
+            alert(`¡Ups! Solo puedes seleccionar hasta 5 fotos en total. Ya tienes ${selectedFiles.length}, y estás intentando agregar ${input.files.length}.`);
             input.value = "";
             return;
         }
 
-        previewContainer.innerHTML = '';
+        // Agregar los nuevos archivos al array
+        selectedFiles = selectedFiles.concat(Array.from(input.files));
+        input.value = ""; // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
+
+        renderPreviewPhotos();
+    }
+}
+
+function renderPreviewPhotos() {
+    const previewContainer = document.getElementById('preview-container');
+    const uploadOptions = document.getElementById('upload-options');
+
+    if (!previewContainer) return;
+
+    previewContainer.innerHTML = '';
+
+    if (selectedFiles.length > 0) {
         previewContainer.classList.remove('hidden');
         if (uploadOptions) uploadOptions.classList.add('hidden');
 
-        Array.from(input.files).forEach((file) => {
+        selectedFiles.forEach((file, index) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const wrapper = document.createElement('div');
-                wrapper.style.cssText = "aspect-ratio:1/1; overflow:hidden; border-radius:4px; border:1px solid #eee;";
+                wrapper.style.cssText = "position: relative; aspect-ratio:1/1; overflow:hidden; border-radius:4px; border:1px solid #eee;";
+
                 const img = document.createElement('img');
                 img.src = e.target.result;
                 img.style.cssText = "width:100%; height:100%; object-fit:cover;";
                 wrapper.appendChild(img);
+
+                // Botón de eliminar
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.style.cssText = `
+                    position: absolute;
+                    top: 4px;
+                    right: 4px;
+                    width: 28px;
+                    height: 28px;
+                    padding: 0;
+                    background: rgba(255, 0, 0, 0.8);
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    font-size: 20px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: background 0.2s;
+                `;
+                deleteBtn.onmouseover = () => { deleteBtn.style.background = 'rgba(255, 0, 0, 1)'; };
+                deleteBtn.onmouseout = () => { deleteBtn.style.background = 'rgba(255, 0, 0, 0.8)'; };
+                deleteBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectedFiles.splice(index, 1);
+                    renderPreviewPhotos(); // Re-renderizar
+                };
+                wrapper.appendChild(deleteBtn);
                 previewContainer.appendChild(wrapper);
             }
             reader.readAsDataURL(file);
         });
+
+        // Mostrar opción de agregar más si hay menos de 5
+        if (selectedFiles.length < 5) {
+            const addMoreContainer = document.createElement('div');
+            addMoreContainer.style.cssText = `
+                aspect-ratio: 1/1;
+                border: 2px dashed var(--gold);
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                gap: 8px;
+                cursor: pointer;
+                background: #fdfdfd;
+                transition: all 0.3s ease;
+                padding: 10px;
+            `;
+            addMoreContainer.onmouseover = () => {
+                addMoreContainer.style.background = '#f5f5f5';
+                addMoreContainer.style.borderColor = 'var(--gold-dark)';
+            };
+            addMoreContainer.onmouseout = () => {
+                addMoreContainer.style.background = '#fdfdfd';
+                addMoreContainer.style.borderColor = 'var(--gold)';
+            };
+
+            const addIcon = document.createElement('div');
+            addIcon.style.cssText = 'font-size: 32px; color: var(--gold);';
+            addIcon.textContent = '+';
+            addMoreContainer.appendChild(addIcon);
+
+            const addText = document.createElement('div');
+            addText.style.cssText = 'font-size: 0.8rem; color: var(--text-gray); text-align: center;';
+            addText.textContent = `Agregar más\n(${selectedFiles.length}/5)`;
+            addMoreContainer.appendChild(addText);
+
+            const cameraInput = document.getElementById('camera-file');
+            const galleryInput = document.getElementById('gallery-file');
+
+            addMoreContainer.addEventListener('click', (e) => {
+                // Mostrar opciones para agregar más
+                const option = confirm('¿Quieres tomar una foto (OK) o seleccionar de galería (Cancelar)?');
+                if (option) {
+                    cameraInput.click();
+                } else {
+                    galleryInput.click();
+                }
+            });
+
+            previewContainer.appendChild(addMoreContainer);
+        }
+    } else {
+        previewContainer.classList.add('hidden');
+        if (uploadOptions) uploadOptions.classList.remove('hidden');
     }
 }
 
 async function handleUpload(event) {
     event.preventDefault();
-    const cameraInput = document.getElementById('camera-file');
-    const galleryInput = document.getElementById('gallery-file');
-    const cameraFiles = cameraInput ? cameraInput.files : [];
-    const galleryFiles = galleryInput ? galleryInput.files : [];
-
-    // Combinar archivos de ambas fuentes
-    const allFiles = Array.from(cameraFiles).concat(Array.from(galleryFiles));
-    if (allFiles.length === 0) return;
+    if (selectedFiles.length === 0) return;
 
     submitBtn.disabled = true;
     statusMessage.style.display = 'block';
@@ -175,12 +275,12 @@ async function handleUpload(event) {
 
     let successCount = 0;
 
-    for (let i = 0; i < allFiles.length; i++) {
+    for (let i = 0; i < selectedFiles.length; i++) {
         const currentNum = i + 1;
-        statusMessage.textContent = `⏳ Subiendo ${currentNum} de ${allFiles.length}...`;
+        statusMessage.textContent = `⏳ Subiendo ${currentNum} de ${selectedFiles.length}...`;
 
         const formData = new FormData();
-        formData.append('file', allFiles[i]);
+        formData.append('file', selectedFiles[i]);
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
         try {
@@ -232,6 +332,9 @@ function closeModal() {
     if (cameraInput) cameraInput.value = "";
     if (galleryInput) galleryInput.value = "";
 
+    // Limpiar archivos seleccionados
+    selectedFiles = [];
+
     // Limpiar vista previa
     const pc = document.getElementById('preview-container');
     const uo = document.getElementById('upload-options');
@@ -251,6 +354,7 @@ window.closeLightbox = closeLightbox;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.previewImages = previewImages;
+window.renderPreviewPhotos = renderPreviewPhotos;
 
 document.addEventListener("DOMContentLoaded", () => {
     if (uploadBtn) uploadBtn.onclick = openModal;

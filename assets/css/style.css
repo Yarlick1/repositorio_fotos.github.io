@@ -385,6 +385,14 @@ h1.couple-names {
     transform: translateY(0);
 }
 
+#preview-container {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
 .upload-icon {
     margin-bottom: 10px;
     opacity: 0.8;
