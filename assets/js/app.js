@@ -24,6 +24,42 @@ let currentIndex = 0;
 let lastPhotoCount = 0;
 let selectedFiles = []; // Array para mantener los archivos seleccionados
 let isUploading = false; // Bloquea cambios mientras se suben las fotos
+let preferredMode = null; // Guardará si es 'camera' o 'gallery'
+
+function setPreferredMode(mode) {
+    const cameraInput = document.getElementById('camera-file');
+    const galleryInput = document.getElementById('gallery-file');
+
+    preferredMode = mode;
+
+    if (mode === 'camera') {
+        if (cameraInput) cameraInput.setAttribute('capture', 'environment');
+        if (galleryInput) galleryInput.removeAttribute('capture');
+    } else if (mode === 'gallery') {
+        if (galleryInput) galleryInput.removeAttribute('capture');
+        if (cameraInput) cameraInput.removeAttribute('capture');
+    }
+}
+
+function openAddMore() {
+    const cameraInput = document.getElementById('camera-file');
+    const galleryInput = document.getElementById('gallery-file');
+
+    let mode = preferredMode;
+    if (!mode) {
+        mode = 'gallery';
+        setPreferredMode(mode);
+    }
+
+    if (mode === 'camera') {
+        setPreferredMode('camera');
+        if (cameraInput) cameraInput.click();
+    } else {
+        setPreferredMode('gallery');
+        if (galleryInput) galleryInput.click();
+    }
+}
+
 
 // --- 1. LÓGICA DE LA GALERÍA ---
 
@@ -273,33 +309,13 @@ function renderPreviewPhotos() {
             const cameraInput = document.getElementById('camera-file');
             const galleryInput = document.getElementById('gallery-file');
 
-            addMoreContainer.addEventListener('click', async (e) => {
+            addMoreContainer.addEventListener('click', (e) => {
                 if (isUploading) {
                     Swal.fire({ icon: 'info', title: 'Subida en curso', text: 'No puedes agregar fotos mientras se están subiendo.' });
                     return;
                 }
-                // Mostrar opciones para agregar más con SweetAlert2
-                const result = await Swal.fire({
-                    title: '¿Cómo quieres agregar más fotos?',
-                    text: `Ya tienes ${selectedFiles.length} fotos. Puedes agregar hasta ${MAX_FILES - selectedFiles.length} más.`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: '📷 Tomar Foto',
-                    cancelButtonText: '🖼️ Seleccionar de Galería',
-                    confirmButtonColor: 'var(--gold)',
-                    cancelButtonColor: '#7D835F',
-                    customClass: {
-                        popup: 'swal-popup-custom',
-                        confirmButton: 'swal-confirm-custom',
-                        cancelButton: 'swal-cancel-custom'
-                    }
-                });
 
-                if (result.isConfirmed) {
-                    cameraInput.click();
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    galleryInput.click();
-                }
+                openAddMore();
             });
 
             previewContainer.appendChild(addMoreContainer);
@@ -399,6 +415,9 @@ async function handleUpload(event) {
     if (cameraBtn) cameraBtn.disabled = false;
     if (galleryBtn) galleryBtn.disabled = false;
     renderPreviewPhotos();
+
+    // Olvidar modo preferido cuando termina la subida
+    preferredMode = null;
 
     setTimeout(() => {
         closeModal();
@@ -503,6 +522,25 @@ window.renderPreviewPhotos = renderPreviewPhotos;
 document.addEventListener("DOMContentLoaded", () => {
     if (uploadBtn) uploadBtn.onclick = openModal;
     if (uploadForm) uploadForm.onsubmit = handleUpload;
+
+    const cameraBtn = document.getElementById('camera-btn');
+    const galleryBtn = document.getElementById('gallery-btn');
+    const cameraInput = document.getElementById('camera-file');
+    const galleryInput = document.getElementById('gallery-file');
+
+    if (cameraBtn) {
+        cameraBtn.onclick = () => {
+            setPreferredMode('camera');
+            if (cameraInput) cameraInput.click();
+        };
+    }
+
+    if (galleryBtn) {
+        galleryBtn.onclick = () => {
+            setPreferredMode('gallery');
+            if (galleryInput) galleryInput.click();
+        };
+    }
 
     fetchPhotos();
     setInterval(fetchPhotos, 8000); // Polling cada 8 seg para no saturar
